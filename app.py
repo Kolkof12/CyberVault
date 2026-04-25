@@ -1,64 +1,71 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import sqlite3
-import uuid
 import random
-import smtplib
-from email.mime.text import MIMEText
 
 app = Flask(__name__)
-app.secret_key = 'CyberVault_Secret'
+app.secret_key = 'CyberVault_Elite_Key'
 
-# إعدادات الإيميل (يجب وضع إيميلك وكلمة مرور التطبيق لتعمل)
-EMAIL_SENDER = "your-email@gmail.com"
-EMAIL_PASSWORD = "your-app-password"
-
+# قاعدة البيانات الشاملة
 def init_db():
-    conn = sqlite3.connect('vault.db')
+    conn = sqlite3.connect('vault_pro.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT, 
-                  card_number TEXT, cvv TEXT, points INTEGER DEFAULT 100)''')
+                  card_number TEXT, cvv TEXT, points INTEGER DEFAULT 1000, card_color TEXT DEFAULT '#1a0505')''')
     conn.commit()
     conn.close()
 
 init_db()
 
-def send_welcome_email(user_email):
-    msg = MIMEText(f"مرحباً بك في CyberVault!\nتم فتح حسابك بنجاح. يمكنك الآن الدخول للمتجر واستخدام بطاقتك الإلكترونية.")
-    msg['Subject'] = 'تم فتح حساب جديد في CyberVault'
-    msg['From'] = EMAIL_SENDER
-    msg['To'] = user_email
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            smtp.send_message(msg)
-    except: pass
+# قائمة المنتجات الكاملة (7 أدوات + 3 كورسات)
+PRODUCTS = {
+    "IPGRAM": 150, "SOLX": 250, "DDOS_V2": 150, "BLACK_WINDOW": 200,
+    "WEB_ANALYZER": 100, "SCAN_SORS": 120, "FRIDA": 180,
+    "C_HACKING": 300, "C_TRADING": 500, "C_PYTHON": 400
+}
 
-@app.route('/register', methods=['POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    email = request.form['email']
-    pwd = request.form['password']
-    # إنشاء بيانات البطاقة الفريدة
-    card_no = " ".join(["".join([str(random.randint(0, 9)) for _ in range(4)]) for _ in range(4)])
-    cvv = str(random.randint(100, 999))
-    
-    try:
-        conn = sqlite3.connect('vault.db')
-        conn.execute('INSERT INTO users (email, password, card_number, cvv) VALUES (?, ?, ?, ?)', 
-                     (email, pwd, card_no, cvv))
+    if request.method == 'POST':
+        email, pwd = request.form['email'], request.form['password']
+        card_no = " ".join(["".join([str(random.randint(0, 9)) for _ in range(4)]) for _ in range(4)])
+        cvv = str(random.randint(100, 999))
+        try:
+            conn = sqlite3.connect('vault_pro.db')
+            conn.execute('INSERT INTO users (email, password, card_number, cvv) VALUES (?, ?, ?, ?)', (email, pwd, card_no, cvv))
+            conn.commit()
+            session['user'] = email
+            return redirect(url_for('index'))
+        except: return "الحساب موجود!"
+    return render_template('register.html')
+
+@app.route('/purchase', methods=['POST'])
+def purchase():
+    p_id = request.json.get('product_id')
+    cost = PRODUCTS.get(p_id)
+    conn = sqlite3.connect('vault_pro.db')
+    user = conn.execute('SELECT points FROM users WHERE email=?', (session['user'],)).fetchone()
+    if user[0] >= cost:
+        conn.execute('UPDATE users SET points = points - ? WHERE email=?', (cost, session['user']))
         conn.commit()
-        send_welcome_email(email)
-        session['user'] = email
-        return redirect(url_for('index'))
-    except:
-        return "هذا الحساب موجود بالفعل!"
+        conn.close()
+        return jsonify({"status": "success", "message": "تم الشراء بنجاح! تفقد بريدك."})
+    return jsonify({"status": "error", "message": "نقاط غير كافية!"})
+
+@app.route('/update_color', methods=['POST'])
+def update_color():
+    color = request.json.get('color')
+    conn = sqlite3.connect('vault_pro.db')
+    conn.execute('UPDATE users SET card_color = ? WHERE email=?', (color, session['user']))
+    conn.commit()
+    return jsonify({"status": "success"})
 
 @app.route('/')
 def index():
-    if 'user' not in session: return redirect(url_for('login_page'))
-    conn = sqlite3.connect('vault.db')
+    if 'user' not in session: return redirect(url_for('register'))
+    conn = sqlite3.connect('vault_pro.db')
     user = conn.execute('SELECT * FROM users WHERE email=?', (session['user'],)).fetchone()
-    conn.close()
     return render_template('index.html', user=user)
 
-# بقية المسارات (Login, Purchase...) كما في الأكواد السابقة
+if __name__ == '__main__':
+    app.run(debug=True)
