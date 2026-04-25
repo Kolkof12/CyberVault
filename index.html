@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>WXL-E Academy | المتجر</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #080808; color: white; }
+        .product-card { background: #121212; border: 1px solid #222; transition: 0.3s; }
+        .product-card:hover { border-color: #ff0000; transform: translateY(-5px); }
+    </style>
+</head>
+<body class="p-4">
+
+    <nav class="flex justify-between items-center max-w-6xl mx-auto mb-10 p-4 border-b border-red-900/30">
+        <div class="text-2xl font-bold text-red-600">WXL-E STORE</div>
+        <div class="flex gap-6 items-center">
+            <span class="bg-red-900/20 px-4 py-1 rounded-full text-red-500">💰 النقاط: {{ points }}</span>
+            <a href="/logout" class="text-gray-400 hover:text-white">تسجيل خروج</a>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div class="bg-gradient-to-r from-red-900/40 to-black p-6 rounded-2xl border border-red-600/30 text-center">
+            <h3 class="text-xl mb-2">🎁 الهدية اليومية</h3>
+            <p class="text-sm text-gray-400 mb-4">احصل على 70 نقطة مجاناً كل 24 ساعة</p>
+            <button onclick="claimGift()" class="bg-red-600 px-8 py-2 rounded-lg font-bold hover:bg-red-700">استلام</button>
+        </div>
+        
+        <div class="bg-gradient-to-r from-blue-900/40 to-black p-6 rounded-2xl border border-blue-600/30 text-center">
+            <h3 class="text-xl mb-2">🔗 رابط الدعوة</h3>
+            <p class="text-sm text-gray-400 mb-2">اربح 50 نقطة عن كل صديق يسجل من خلالك</p>
+            <input type="text" readonly value="http://127.0.0.1:5000/register?ref={{ ref_code }}" id="refLink" class="w-full bg-black/50 p-2 text-center text-xs rounded border border-gray-700 text-blue-400 mb-2">
+            <button onclick="copyRef()" class="text-blue-400 text-sm font-bold">نسخ الرابط</button>
+        </div>
+    </div>
+
+    <h2 class="max-w-6xl mx-auto text-2xl font-bold mb-6 border-r-4 border-red-600 pr-4">المنتجات المميزة</h2>
+    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <div class="product-card p-4 rounded-2xl">
+            <img src="https://via.placeholder.com/300x150/1a1a1a/ff0000?text=IPGRAM+V3" class="w-full rounded-xl mb-4">
+            <h3 class="text-xl font-bold">IPGRAM V3 Professional</h3>
+            <div class="text-yellow-500 my-2">⭐⭐⭐⭐⭐</div>
+            <p class="text-gray-400 text-sm mb-4">أداة متطورة لسحب وفحص بيانات الـ IPs بدقة.</p>
+            <button class="w-full py-2 bg-white text-black font-bold rounded-lg hover:bg-red-600 hover:text-white transition">PTS 150</button>
+        </div>
+
+        <div class="product-card p-4 rounded-2xl">
+            <img src="https://via.placeholder.com/300x150/1a1a1a/00ff00?text=Trading+Course" class="w-full rounded-xl mb-4">
+            <h3 class="text-xl font-bold text-green-500">كورس تداول: من الصفر</h3>
+            <div class="text-yellow-500 my-2">⭐⭐⭐⭐⭐</div>
+            <p class="text-gray-400 text-sm mb-4">تعلم فنون التداول والتحليل في ملف PDF شامل.</p>
+            <button class="w-full py-2 bg-white text-black font-bold rounded-lg hover:bg-green-600 hover:text-white transition">PTS 500</button>
+        </div>
+
+        </div>
+
+    <footer class="mt-20 py-8 border-t border-gray-900 text-center text-gray-500">
+        <p class="mb-2">حقوق البرمجة محفوظة ومنصة WXL-E ACADEMY</p>
+        <p class="text-red-600 font-bold">Telegram: @wxl_e ~ @tofnne</p>
+    </footer>
+
+    <script>
+        function copyRef() {
+            var copyText = document.getElementById("refLink");
+            copyText.select();
+            document.execCommand("copy");
+            alert("تم نسخ الرابط! أرسله لأصدقائك.");
+        }
+
+        async function claimGift() {
+            const res = await fetch('/claim_gift', {method: 'POST'});
+            const data = await res.json();
+            alert(data.message);
+            if(data.status === 'success') location.reload();
+        }
+    </script>
+</body>
+</html>
